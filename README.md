@@ -1,0 +1,1 @@
+# c_code_for_mnist_inference
