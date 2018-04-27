@@ -149,7 +149,7 @@ void run_convolution_layer2(unsigned char in_layer[], unsigned char out_layer[],
   	for(n=1;n<(width/2+2)/2;n++)
   		for(m=1;m<(height/2+2)/2;m++)
   			if((n%(width/2+2)!=0) && (n%(width/2+1)!=0) && m%(height/2+2)!=0 && m%(height/2+1)!=0){
-  				y_out[(n-1)*height/2+m] = max(max(out_layer[n*height/2+m],out_layer[n*height/2+m+1]),max(out_layer[(n+1)*height/2+m],out_layer[(n+1)*height/2+m+1]));
+  				y_out[(n-1)*height/4+m] = max(max(out_layer[n*(height/2+2)+m],out_layer[n*(height/2+2)+m+1]),max(out_layer[(n+1)*(height/2+2)+m],out_layer[(n+1)*(height/2+2)+m+1]));
   			}
   
 }
@@ -162,49 +162,24 @@ void run_convolution_layer2(unsigned char in_layer[], unsigned char out_layer[],
 void run_convolution_layer3(unsigned char in_layer[], unsigned char out_layer[],
                             const float bias[], const float weight[]) {
   int k,l,m,n,q,r;
-  static float y[80*173*313];
+  static float y[64*7*7];
 
   //init values of feature maps at bias value
-  for(r=0; r<80; r++){
-    for(q=0; q<173*313; q++){
-      y[r*173*313+q]=bias[r];
-    }  
-  }
+  for(r=0; r<1024; r++)
+      y[r]=bias[r];
 
-  for(q=0; q<8; q++){//connect with first 8 feature maps
-    for(r=0; r<40; r++){//loops over first 40 output feature maps
-      //convolve weight kernel with input image
-      for(n=0; n<313; n++){//shift input window over image
-        for(m=0; m<173; m++){      
-          //multiply input window with kernel
-          for(l=0; l<5; l++){//only 5x5 convolution
-            for(k=0; k<5; k++){//there is no subsampling in this layer    
-              y[r*173*313+m*313+n]
-                += in_layer[q*177*317+(m+k)*317+n+l] * weight[(r*8+q)*25+k*5+l];
-            }
+  for(q=0;r<1024;q++){
+  	for(r=0; q<64; r++){//connect with first 8 feature maps
+      for(n=0; n<7; n++){//shift input window over image
+        for(m=0; m<7; m++){      
+        	y[r] += in_layer[q*7*7+n*height+m] * weight[r*7*7*64+q*7*7+n*height+m]; 
           }
         }
       }
     }           
   }
   
-  for(q=8; q<16; q++){//connect with last 8 feature maps
-    for(r=40; r<80; r++){ //loops over remaining 40 output feature maps 
-      //convolve weight kernel with input image
-      for(n=0; n<313; n++){//shift input window over image
-        for(m=0; m<173; m++){
-          //multiply input window with kernel
-          for(l=0; l<5; l++){//only 5x5 convolution 
-            for(k=0; k<5; k++){     
-              y[r*173*313+m*313+n] += in_layer[q*177*317+(m+k)*317+n+l]
-                * weight[(r*8+q-8)*25+k*5+l];
-            }
-          }
-        }       
-      }
-    }           
-  }
-  
+
   for(r=0; r<80*173*313; r++){//sigmoid activation function
     out_layer[r]=255.999f/(1+expf(-y[r]/256));
   }

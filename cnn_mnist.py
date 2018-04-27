@@ -159,7 +159,7 @@ def main(unused_argv):
 
 	# chkp.print_tensors_in_checkpoint_file("/home/qiuwen/Downloads/tensorflow_to_c/mnist_convnet_model/model.ckpt-120", tensor_name='', all_tensors=True, all_tensor_names=False)
 	# reader = pywrap_tensorflow.NewCheckpointReader("/home/qiuwen/Downloads/tensorflow_to_c/mnist_convnet_model/model.ckpt-240")
-	reader = pywrap_tensorflow.NewCheckpointReader("/Users/qlou/Documents/tensorflow_to_c/mnist_convnet_model/model.ckpt-300")
+	reader = pywrap_tensorflow.NewCheckpointReader("/Users/qlou/Documents/tensorflow_to_c/mnist_convnet_model/model.ckpt-340")
 
 	var_to_shape_map = reader.get_variable_to_shape_map()
 	for key in sorted(var_to_shape_map):
