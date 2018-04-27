@@ -76,8 +76,14 @@ void run_convolution_layer1(unsigned char in_layer[], unsigned char out_layer[],
       out_layer[r] = 0;
   }
 
-  //pooling
-
+  //pooling with stride 2
+  for(r=0;r<32;r++)
+  	for(n=1;n<(width+2)/2;n++)
+  		for(m=1;m<(height+2)/2;m++)
+  			if((n%(width+2)!=0) && (n%(width+1)!=0) && m%(height+2)!=0 && m%(height+1)!=0){
+  				y_out[(n-1)*height+m] = max(max(out_layer[n*height+m],out_layer[n*height+m+1]),max(out_layer[(n+1)*height+m],out_layer[(n+1)*height+m+1]));
+  			}
+  
 }
 
 /********************************************************************************
@@ -88,7 +94,7 @@ void run_convolution_layer1(unsigned char in_layer[], unsigned char out_layer[],
 void run_convolution_layer2(unsigned char in_layer[], unsigned char out_layer[],
                             const float bias[], const float weight[]) {
   int k,l,m,n,q,r,qindex;
-  static float y[64*width*height];
+  static float y[64*(width/2+2)*(height/2+2)];
   //feature maps are sparse connected therefore connection scheme is used
   //const int qq[60]={0,1,2, 1,2,3, 2,3,4, 3,4,5, 0,4,5, 0,1,5,
   //                  0,1,2,3, 1,2,3,4, 2,3,4,5, 0,3,4,5, 0,1,4,5, 0,1,2,5,
@@ -96,30 +102,30 @@ void run_convolution_layer2(unsigned char in_layer[], unsigned char out_layer[],
 
   //init all values with 0
   for (r=0;r<64;r++){
-    for(m=0;m<(width+2)*(height+2);m++){
-      y[r*(width+2)*(height+2)+m]=0;
+    for(m=0;m<(width/2+2)*(height/2+2);m++){
+      y[r*(width/2+2)*(height/2+2)+m]=0;
     }
   }
   //init values of feature map at bias value
   for(r=0; r<64; r++){
-    for(q=0; m<width*height; m++){
-      if((m%(width+2)!=0) && (m%(width+1)!=0))
-        y[r*width*height+m]=bias[r];
+    for(q=0; m<(width/2+2)*(height/2+2); m++){
+      if((m%(width/2+2)!=0) && (m%(width/2+1)!=0))
+        y[r*(width/2+2)*(height/2+2)+m]=bias[r];
     }
-  }  
-            
+  }
+
   //loops over output feature maps with 3 input feature maps
   for(q=0; q<32; q++){
     for(r=0; r<64; r++){//connect with all connected 3 input feature maps
       //qindex=qq[r*3+q];//lookup connection address
       //convolve weight kernel with input image
-      for(n=0; n<width+2; m++){//shift input window over image
-        for(m=0; m<height+2; n++){
-          if((n%(width+2)!=0) && (n%(width+1)!=0) && m%(height+2)!=0 && m%(height+1)!=0){
+      for(n=0; n<width/2+2; m++){//shift input window over image
+        for(m=0; m<height/2+2; n++){
+          if((n%(width/2+2)!=0) && (n%(width/2+1)!=0) && m%(height/2+2)!=0 && m%(height/2+1)!=0){
           //multiply input window with kernel
           for(k=0; k<5; k++){
             for(l=0; l<5; l++){
-              y[r*（width+2）*(height+2)+m*(width+2)+n] += in_layer[q*width*height+(m-1)*width+n-1]
+              y[r*（width/2+2）*(height/2+2)+m*(width/2+2)+n] += in_layer[q*(width/2+1)*(height/2+1)+(m-1)*(width/2+2)+n-1]
                 * weight[(r*32+q)*5*5+k*5+l];
               }
             }
@@ -130,9 +136,22 @@ void run_convolution_layer2(unsigned char in_layer[], unsigned char out_layer[],
   }
 
 
-  for(r=0; r<64*width*height; r++){ //relu actvation
-    out_layer[r]=255.999f/(1+expf(-y[r]/256));
+  //relu activation function
+  for(r=0; r<64*(width/2+2)*(height/2+2); r++){
+    if(y[r]>0)
+      out_layer[r] = y[r];
+    else
+      out_layer[r] = 0;
   }
+
+  //pooling with stride 2
+  for(r=0;r<32;r++)
+  	for(n=1;n<(width/2+2)/2;n++)
+  		for(m=1;m<(height/2+2)/2;m++)
+  			if((n%(width/2+2)!=0) && (n%(width/2+1)!=0) && m%(height/2+2)!=0 && m%(height/2+1)!=0){
+  				y_out[(n-1)*height/2+m] = max(max(out_layer[n*height/2+m],out_layer[n*height/2+m+1]),max(out_layer[(n+1)*height/2+m],out_layer[(n+1)*height/2+m+1]));
+  			}
+  
 }
 
 /************************************************************************************
