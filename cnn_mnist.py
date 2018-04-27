@@ -166,42 +166,42 @@ def main(unused_argv):
 		# print("tensor_name", key)
 		# print(reader.get_tensor(key))
 		if key == "conv2d/bias":
-			output_file = open("bias1.bin","wb");
+			output_file = open("data/bias1.bin","wb");
 			pickle.dump(reader.get_tensor(key), output_file)
 			print(reader.get_tensor(key).shape)
 			output_file.close()
 		elif key == "conv2d/kernel":
-			output_file = open("weight1.bin","wb");
+			output_file = open("data/weight1.bin","wb");
 			pickle.dump(reader.get_tensor(key), output_file)
 			print(reader.get_tensor(key).shape)
 			output_file.close()
 		elif key == "conv2d_1/bias":
-			output_file = open("bias2.bin","wb");
+			output_file = open("data/bias2.bin","wb");
 			pickle.dump(reader.get_tensor(key), output_file)
 			print(reader.get_tensor(key).shape)
 			output_file.close()
 		elif key == "conv2d_1/kernel":
-			output_file = open("weight2.bin","wb");
+			output_file = open("data/weight2.bin","wb");
 			pickle.dump(reader.get_tensor(key), output_file)
 			print(reader.get_tensor(key).shape)
 			output_file.close()
 		elif key == "dense/bias":
-			output_file = open("bias3.bin","wb");
+			output_file = open("data/bias3.bin","wb");
 			pickle.dump(reader.get_tensor(key), output_file)
 			print(reader.get_tensor(key).shape)
 			output_file.close()
 		elif key == "dense/kernel":
-			output_file = open("weight3.bin","wb");
+			output_file = open("data/weight3.bin","wb");
 			pickle.dump(reader.get_tensor(key), output_file)
 			print(reader.get_tensor(key).shape)
 			output_file.close()
 		elif key == "dense_1/bias":
-			output_file = open("bias4.bin","wb");
+			output_file = open("data/bias4.bin","wb");
 			pickle.dump(reader.get_tensor(key), output_file)
 			print(reader.get_tensor(key).shape)
 			output_file.close()
 		elif key == "dense_1/kernel":
-			output_file = open("weight4.bin","wb");
+			output_file = open("data/weight4.bin","wb");
 			pickle.dump(reader.get_tensor(key), output_file)
 			print(reader.get_tensor(key).shape)
 			output_file.close()

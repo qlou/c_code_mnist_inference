@@ -25,6 +25,132 @@
 #define height 28
 // #include "utils.h"
 
+#define LINE_BUFFER_SIZE 100  //Line buffer size for read write 
+
+/*******************************************************************************
+ * Input   : char array containing the filename containing all weights, number of weights
+ * Output  : array matrix filled with weights for each feature map
+ * Procedure: read all weights from file and strore in array
+ ******************************************************************************/
+void read_weight1(const char filename[], int size, float matrix[]) {
+  FILE* finput;
+    
+  finput = fopen(filename , "rb" );
+  if (finput==NULL) {fputs ("File error",stderr); exit (13);}
+  
+  fread(matrix, sizeof(float), size, finput);
+  fclose(finput);
+}
+
+/************************************************************************************
+ * Function: void read_bias(char filename[], int length, float vector[])
+ * Input   : char array containing the filename and location for reading, number of bias values this
+                is the same as the number of output featuremaps, pointer for output
+                * Output  : vector filled with bias weights for each feature map
+                * Procedure: read bias weights from file normalize to uchar range and strore on correct possition
+                ************************************************************************************/
+void read_bias1(const char filename[], int length, float vector[]) {
+  int i;
+  FILE* finput;
+  
+  finput = fopen(filename , "rb" );
+  if (finput==NULL) {fputs ("File error",stderr); exit (13);}
+  
+  fread(vector, sizeof(float), length, finput);
+  for(i=0; i<length; i++){
+    vector[i]=256*vector[i];
+  }
+  fclose(finput);
+}
+
+void read_image_pgm(unsigned char image[], char filename[], int imageWidth, int imageHeight)
+{   /************************************************************************************
+     * Function: void read_image_pgm(unsigned char image[], char filename[], int imageWidth, int imageHeight)
+     * Input   : uchar array pointer for output result, char array with filename, int with with, int with height
+     * Output  : uchar image array
+     * Procedure: if image dimensions and layout pgm correct imare is read from file to image array
+     ************************************************************************************/
+  int grayMax;
+  int PGM_HEADER_LINES=3;
+  FILE* input;
+
+  int headerLines = 1;
+  int scannedLines= 0;
+  long int counter =0;
+
+  //read header strings
+  char *lineBuffer = (char *) malloc(LINE_BUFFER_SIZE+1);
+  char *split;
+  char *format = (char *) malloc(LINE_BUFFER_SIZE+1);
+  char P5[]="P5";
+  char comments[LINE_BUFFER_SIZE+1];
+
+  //open the input PGM file
+  input=fopen(filename, "rb");
+
+  //read the input PGM file header
+  while(scannedLines < headerLines){
+    fgets(lineBuffer, LINE_BUFFER_SIZE, input);
+    //if not comments
+    if(lineBuffer[0] != '#'){
+      scannedLines += 1;
+      //read the format
+      if(scannedLines==1){
+        split=strtok(lineBuffer, " \n");
+        strcpy(format,split);
+        if(strcmp(format,P5) == 0){
+          //printf("FORMAT: %s\n",format);
+          headerLines=PGM_HEADER_LINES;
+        }
+        else
+        {
+          printf("Only PGM P5 format is support. \n");
+        }
+      }
+      //read width and height
+      if (scannedLines==2)
+      {
+        split=strtok(lineBuffer, " \n");
+        if(imageWidth == atoi(split)){ //check if width matches description
+          //printf("WIDTH: %d, ", imageWidth);
+        }
+        else{
+          printf("input frame has wrong width should be WIDTH: %d, ", imageWidth);
+          exit(4);
+        }
+        split = strtok (NULL, " \n");
+        if(imageHeight == atoi(split)){ //check if heigth matches description
+          //printf("HEIGHT: %d\n", imageHeight);
+        }
+        else{
+          printf("input frame has wrong height should be HEIGHT: %d, ", imageHeight);
+          exit(4);
+        }
+      }
+      // read maximum gray value
+      if (scannedLines==3)
+      {
+        split=strtok(lineBuffer, " \n");
+        grayMax = atoi(split);
+        //printf("GRAYMAX: %d\n", grayMax);
+      }
+    }
+    else
+    {
+      strcpy(comments,lineBuffer);
+      //printf("comments: %s", comments);
+    }
+  }
+
+  counter = fread(image, sizeof(unsigned char), imageWidth * imageHeight, input);
+  //printf("pixels read: %d\n",counter);
+        
+  //close the input pgm file and free line buffer
+  fclose(input);
+  free(lineBuffer);
+  free(format);
+}
+
 /************************************************************************************
  * Input   : input image, pointer to output result, coefficients bias and weights
  * Output  : neuron outputs of the feature maps represented as an image
@@ -169,19 +295,22 @@ void run_convolution_layer3(unsigned char in_layer[], unsigned char out_layer[],
       y[r]=bias[r];
 
   for(q=0;r<1024;q++){
-  	for(r=0; q<64; r++){//connect with first 8 feature maps
+  	for(r=0; q<64; r++){
       for(n=0; n<7; n++){//shift input window over image
         for(m=0; m<7; m++){      
         	y[r] += in_layer[q*7*7+n*height+m] * weight[r*7*7*64+q*7*7+n*height+m]; 
-          }
         }
       }
     }           
   }
   
 
-  for(r=0; r<80*173*313; r++){//sigmoid activation function
-    out_layer[r]=255.999f/(1+expf(-y[r]/256));
+  //relu activation function
+  for(r=0; r<1024; r++){
+  	if(y[r]>0)
+    	out_layer[r]=y[r];
+    else
+    	out_layer[r]=0;
   }
 }
 
@@ -201,44 +330,17 @@ int run_convolution_layer4(unsigned char in_layer[], const float bias[],
 
   float max;
 
-  //convolve weight kernel with input image
-  for(m=0; m<173; m++){//shift input window over image
-    for(n=0; n<313; n++){
-      //init values of feature map at bias value
-      y = bias[0];
-      for(q=0; q<80; q++){
-        y += in_layer[q*173*313+m*313+n] * weight[q];
-      }
-      // no sigmoid required sigmoid threshold 0.6 => potential should be
-      // inverse -ln(0.6^-1 -1)= 0.405 x 256 = 103.799
-      //if (y >= 103.799f){ // if sign detected figure out which sign
-	  if (y >= 0.0f){ // if sign detected figure out which sign
-        max=0;
-        for(r=1; r<8; r++){// check other 7 maps for the stronges sign
-          y = bias[r];
-          for(q=0; q<80; q++){
-            y += in_layer[q*173*313+m*313+n] * weight[r*80+q];
-          }
-          //if (y>=103.799f && y>max){
-		  if (y>=0.0f && y>max){
-		    max=y;
-            posx=n*4;
-			posy=m*4;
-			detect[detections*4]=posx;
-			detect[detections*4+1]=posy;
-			detect[detections*4+2]=r;
-			detect[detections*4+3]=100.0f/(1+expf(-y/256));
-			set=1;
-          }
-        }
-        if (set==1){//this means that a sign is found
-          detections=detections+1;
-	      set=0;
-        }
-      }
+  //init values of feature maps at bias value
+  for(r=0; r<10; r++)
+      y[r]=bias[r];
+
+  for(r=0;r<10;r++){
+  	for(q=0; q<1024; q++){
+    	y[r] += in_layer[r*1024+q] * weight[r*1024+q]; 
     }           
   }
-  return detections;
+
+  return y;
 }
 
 void annotate_img(unsigned char img[], unsigned int detectarray[], int detections)
@@ -261,67 +363,65 @@ void annotate_img(unsigned char img[], unsigned int detectarray[], int detection
 
 int main(void) {
   int i;
-  const int max_speed[8]={0, 30, 50, 60, 70, 80, 90, 100};
+  // const int max_speed[8]={0, 30, 50, 60, 70, 80, 90, 100};
   char imagename[32]; 
-  static unsigned char in_image[720*1280];//for input image
+  static unsigned char in_image[28*28];//for input image
   //feature map results due to unroling+2 otherwise writes outside array
-  static unsigned char net_layer1[6*358*638];
-  static unsigned char net_layer2[16*177*317];
-  static unsigned char net_layer3[80*173*313];
+  static unsigned char net_layer1[32*14*14];
+  static unsigned char net_layer2[64*7*7];
+  static unsigned char net_layer3[1024];
 
-  static float bias1[6];  //memory for network coefficients
-  static float weight1[6*36];
-  static float bias2[16];
-  static float weight2[(6*3+9*4+6)*36];
-  static float bias3[80];
-  static float weight3[25*8*80];
-  static float bias4[8];
-  static float weight4[80*8]; 
+  static float bias1[32];  //memory for network coefficients
+  static float weight1[32*5*5];
+  static float bias2[64];
+  static float weight2[64*5*5];
+  static float bias3[1024];
+  static float weight3[7*7*64*1024];
+  static float bias4[10];
+  static float weight4[1024*10]; 
   
-  static unsigned int detectarray[3*10];
-  int detections;
+  // static unsigned int detectarray[3*10];
+  // int detections;
 
-  clock_t starttime, endtime; //vars for measure computation time
+  // clock_t starttime, endtime; //vars for measure computation time
 
-  read_bias1("data/bias01.bin", 6, bias1);
-  read_weight1("data/weight01.bin", 6*36, weight1);
+  read_bias1("data/bias1.bin", 32, bias1);
+  read_weight1("data/weight1.bin", 32*5*5, weight1);
 
-  read_bias1("data/bias02.bin", 16, bias2);
-  read_weight1("data/weight02.bin", 2160, weight2);
+  read_bias1("data/bias2.bin", 64, bias2);
+  read_weight1("data/weight2.bin", 64*5*5, weight2);
 
-  read_bias1("data/bias03.bin", 80, bias3);
-  read_weight1("data/weight03.bin", 25*8*80, weight3);
+  read_bias1("data/bias3.bin", 1024, bias3);
+  read_weight1("data/weight3.bin", 7*7*64*1024, weight3);
 
-  read_bias1("data/bias04.bin", 8, bias4);
-  read_weight1("data/weight04.bin", 80*8, weight4);
+  read_bias1("data/bias4.bin", 10, bias4);
+  read_weight1("data/weight4.bin", 1024*10, weight4);
 
   //compute input name
-  sprintf(imagename,"data/test%06d.pgm",46);
+  // sprintf(imagename,"data/test%06d.pgm",46);
 
   //read image from file
-  read_image_pgm(in_image, imagename, 1280, 720);
+  read_image_pgm(in_image, imagename, 28, 28);
 
-  //start timer
-  starttime=clock();
+  // start timer
+  // starttime=clock();
         
   //perform feed forward operation thourgh the network
   run_convolution_layer1(in_image, net_layer1, bias1, weight1);
   run_convolution_layer2(net_layer1, net_layer2, bias2, weight2);
   run_convolution_layer3(net_layer2, net_layer3, bias3, weight3);
-  detections=run_convolution_layer4(net_layer3, bias4, weight4, detectarray);      
+  probabilities=run_convolution_layer4(net_layer3, bias4, weight4, detectarray);      
 
   //stop timer
-  endtime=clock();
-  printf("  Elapsed time is %f s\n", 1.0*(endtime-starttime)/CLOCKS_PER_SEC);
-  
-  printf("number of detections = %d\n",detections);
-  for(i=0; i<detections; i++){
-    printf("detection nr %d = %d km/h, box pos= x %d, y %d, confidence = %d\n",i,max_speed[detectarray[i*4+2]], detectarray[i*4],detectarray[i*4+1],detectarray[i*4+3]);
+  //endtime=clock();
+  int result, max=0;
+  for(int i=0;i<10;i++){
+  	if(probabilities[i]>max){
+  		result = [i];
+  		max = probabilities[i];
+  	}
   }
-  
-  annotate_img(in_image, detectarray, detections);
-  
-  write_image_pgm(in_image, "output.pgm", 1280, 720);  
-  
+  printf(" The classification result is %d s\n",result);
+    
   return 0;
 }
