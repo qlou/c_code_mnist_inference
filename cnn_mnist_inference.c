@@ -288,7 +288,8 @@ void run_convolution_layer2(unsigned char in_layer[], unsigned char out_layer[],
 void run_convolution_layer3(unsigned char in_layer[], unsigned char out_layer[],
                             const float bias[], const float weight[]) {
   int k,l,m,n,q,r;
-  static float y[64*7*7];
+  int num = 64*7*7;
+  static float y[num];
 
   //init values of feature maps at bias value
   for(r=0; r<1024; r++)
@@ -320,8 +321,8 @@ void run_convolution_layer3(unsigned char in_layer[], unsigned char out_layer[],
  * Procedure: perform feed forward computation through the neural network layer
               threshold with neuron output to detect signs at pixel positions
 ************************************************************************************/
-int run_convolution_layer4(unsigned char in_layer[], const float bias[],
-                            const float weight[], unsigned int detect[]) {
+void run_convolution_layer4(unsigned char in_layer[], const float bias[],
+                            const float weight[], float probabilities[]) {
   int m,n,q,r;
   int detections=0;
   int posx, posy;
@@ -339,8 +340,7 @@ int run_convolution_layer4(unsigned char in_layer[], const float bias[],
     	y[r] += in_layer[r*1024+q] * weight[r*1024+q]; 
     }           
   }
-
-  return y;
+  probabilities = y;
 }
 
 void annotate_img(unsigned char img[], unsigned int detectarray[], int detections)
@@ -364,12 +364,13 @@ void annotate_img(unsigned char img[], unsigned int detectarray[], int detection
 int main(void) {
   int i;
   // const int max_speed[8]={0, 30, 50, 60, 70, 80, 90, 100};
-  char imagename[32]; 
+  char imagename[100]; 
   static unsigned char in_image[28*28];//for input image
   //feature map results due to unroling+2 otherwise writes outside array
   static unsigned char net_layer1[32*14*14];
   static unsigned char net_layer2[64*7*7];
   static unsigned char net_layer3[1024];
+  double probabilities[10];
 
   static float bias1[32];  //memory for network coefficients
   static float weight1[32*5*5];
@@ -398,8 +399,8 @@ int main(void) {
   read_weight1("data/weight4.bin", 1024*10, weight4);
 
   //compute input name
-  // sprintf(imagename,"data/test%06d.pgm",46);
-
+  sprintf(imagename,"MNIST_images/input0.pgm");
+  //imagename = "MNIST_images/input0.pgm";
   //read image from file
   read_image_pgm(in_image, imagename, 28, 28);
 
@@ -410,14 +411,14 @@ int main(void) {
   run_convolution_layer1(in_image, net_layer1, bias1, weight1);
   run_convolution_layer2(net_layer1, net_layer2, bias2, weight2);
   run_convolution_layer3(net_layer2, net_layer3, bias3, weight3);
-  probabilities=run_convolution_layer4(net_layer3, bias4, weight4, detectarray);      
+  run_convolution_layer4(net_layer3, bias4, weight4，probabilities);      
 
   //stop timer
   //endtime=clock();
   int result, max=0;
   for(int i=0;i<10;i++){
   	if(probabilities[i]>max){
-  		result = [i];
+  		result = i;
   		max = probabilities[i];
   	}
   }
