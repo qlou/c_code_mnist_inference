@@ -32,6 +32,14 @@
  * Output  : array matrix filled with weights for each feature map
  * Procedure: read all weights from file and strore in array
  ******************************************************************************/
+double min(double a, double b) {
+    return a<b ? a : b;
+}
+
+double max(double a, double b) {
+    return a<b ? a : b;
+}
+
 void read_weight1(const char filename[], int size, float matrix[]) {
   FILE* finput;
     
@@ -158,10 +166,11 @@ void read_image(unsigned char image[], char filename[], int imageWidth, int imag
      *******************************************************************************/
 
 
-void run_convolution_layer1(unsigned char in_layer[], unsigned char out_layer[],
+void run_convolution_layer1(unsigned char in_layer[], unsigned char y_out[],
                             const float bias[], const float weight[]) {
   int k,l,m,n,r;
   static float y[32*(width+2)*(height+2)];
+  unsigned char out_layer[32*(width+2)*(height+2)];
 
   //init all values with 0
   for (r=0;r<32;r++){
@@ -217,10 +226,11 @@ void run_convolution_layer1(unsigned char in_layer[], unsigned char out_layer[],
  * Output  : the neuron outputs computed from the input pattern
  * Procedure: perform feed forward computation through the neural network
  ********************************************************************************/
-void run_convolution_layer2(unsigned char in_layer[], unsigned char out_layer[],
+void run_convolution_layer2(unsigned char in_layer[], unsigned char y_out[],
                             const float bias[], const float weight[]) {
   int k,l,m,n,q,r,qindex;
   static float y[64*(width/2+2)*(height/2+2)];
+  unsigned char out_layer[64*(width/2+2)*(height/2+2)];
   //feature maps are sparse connected therefore connection scheme is used
   //const int qq[60]={0,1,2, 1,2,3, 2,3,4, 3,4,5, 0,4,5, 0,1,5,
   //                  0,1,2,3, 1,2,3,4, 2,3,4,5, 0,3,4,5, 0,1,4,5, 0,1,2,5,
@@ -251,7 +261,7 @@ void run_convolution_layer2(unsigned char in_layer[], unsigned char out_layer[],
           //multiply input window with kernel
           for(k=0; k<5; k++){
             for(l=0; l<5; l++){
-              y[r*（width/2+2）*(height/2+2)+m*(width/2+2)+n] += in_layer[q*(width/2+1)*(height/2+1)+(m-1)*(width/2+2)+n-1]
+              y[r*(width/2+2)*(height/2+2)+m*(width/2+2)+n] += in_layer[q*(width/2+1)*(height/2+1)+(m-1)*(width/2+2)+n-1]
                 * weight[(r*32+q)*5*5+k*5+l];
               }
             }
@@ -289,11 +299,12 @@ void run_convolution_layer3(unsigned char in_layer[], unsigned char out_layer[],
                             const float bias[], const float weight[]) {
   int k,l,m,n,q,r;
   int num = 64*7*7;
-  static float y[num];
+  static float y[64*7*7];
 
   //init values of feature maps at bias value
-  for(r=0; r<1024; r++)
+  for(r=0; r<1024; r++){
       y[r]=bias[r];
+  }
 
   for(q=0;r<1024;q++){
   	for(r=0; q<64; r++){
@@ -322,11 +333,10 @@ void run_convolution_layer3(unsigned char in_layer[], unsigned char out_layer[],
               threshold with neuron output to detect signs at pixel positions
 ************************************************************************************/
 void run_convolution_layer4(unsigned char in_layer[], const float bias[],
-                            const float weight[], float probabilities[]) {
-  int m,n,q,r;
-  int detections=0;
+                            const float weight[],unsigned char probabilities[]) {
+  int m,n,q,r,i;
   int posx, posy;
-  float y;
+  float y[10];
   int set=0;
 
   float max;
@@ -340,7 +350,9 @@ void run_convolution_layer4(unsigned char in_layer[], const float bias[],
     	y[r] += in_layer[r*1024+q] * weight[r*1024+q]; 
     }           
   }
-  probabilities = y;
+  for(i=0;i<10;i++){
+  	probabilities[i] = y[i];
+  }
 }
 
 void annotate_img(unsigned char img[], unsigned int detectarray[], int detections)
@@ -370,7 +382,7 @@ int main(void) {
   static unsigned char net_layer1[32*14*14];
   static unsigned char net_layer2[64*7*7];
   static unsigned char net_layer3[1024];
-  double probabilities[10];
+  unsigned char probabilities[10];
 
   static float bias1[32];  //memory for network coefficients
   static float weight1[32*5*5];
@@ -402,7 +414,7 @@ int main(void) {
   sprintf(imagename,"MNIST_images/input0.pgm");
   //imagename = "MNIST_images/input0.pgm";
   //read image from file
-  read_image_pgm(in_image, imagename, 28, 28);
+  read_image(in_image, imagename, 28, 28);
 
   // start timer
   // starttime=clock();
@@ -411,7 +423,7 @@ int main(void) {
   run_convolution_layer1(in_image, net_layer1, bias1, weight1);
   run_convolution_layer2(net_layer1, net_layer2, bias2, weight2);
   run_convolution_layer3(net_layer2, net_layer3, bias3, weight3);
-  run_convolution_layer4(net_layer3, bias4, weight4，probabilities);      
+  run_convolution_layer4(net_layer3, bias4, weight4, probabilities);      
 
   //stop timer
   //endtime=clock();
