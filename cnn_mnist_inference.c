@@ -63,7 +63,7 @@ void read_bias1(const char filename[], int length, float vector[]) {
   fclose(finput);
 }
 
-void read_image_pgm(unsigned char image[], char filename[], int imageWidth, int imageHeight)
+void read_image(unsigned char image[], char filename[], int imageWidth, int imageHeight)
 {   /************************************************************************************
      * Function: void read_image_pgm(unsigned char image[], char filename[], int imageWidth, int imageHeight)
      * Input   : uchar array pointer for output result, char array with filename, int with with, int with height
