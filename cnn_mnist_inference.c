@@ -71,7 +71,7 @@ void read_bias1(const char filename[], int length, float vector[]) {
   fclose(finput);
 }
 
-void read_image(unsigned char image[], char filename[], int imageWidth, int imageHeight)
+void read_image(float image_float[], char filename[], int imageWidth, int imageHeight)
 {   /************************************************************************************
      * Function: void read_image_pgm(unsigned char image[], char filename[], int imageWidth, int imageHeight)
      * Input   : uchar array pointer for output result, char array with filename, int with with, int with height
@@ -81,6 +81,7 @@ void read_image(unsigned char image[], char filename[], int imageWidth, int imag
   int grayMax;
   int PGM_HEADER_LINES=3;
   FILE* input;
+  unsigned char image[30*30];
 
   int headerLines = 1;
   int scannedLines= 0;
@@ -152,7 +153,14 @@ void read_image(unsigned char image[], char filename[], int imageWidth, int imag
 
   counter = fread(image, sizeof(unsigned char), imageWidth * imageHeight, input);
   //printf("pixels read: %d\n",counter);
-        
+  int i;
+  for (i=0;i<784;i++){
+  	image_float[i] = (float)(image[i])/255;   
+  }
+  
+  //for(i=0;i<784;i++){
+  //	printf("%f,",image_float[i]);
+  //}
   //close the input pgm file and free line buffer
   fclose(input);
   free(lineBuffer);
@@ -166,11 +174,11 @@ void read_image(unsigned char image[], char filename[], int imageWidth, int imag
      *******************************************************************************/
 
 
-void run_convolution_layer1(unsigned char in_layer[], unsigned char y_out[],
+void run_convolution_layer1(float in_layer[], float y_out[],
                             const float bias[], const float weight[]) {
   int k,l,m,n,r;
   static float y[32*(width+2)*(height+2)];
-  unsigned char out_layer[32*(width+2)*(height+2)];
+  float out_layer[32*(width+2)*(height+2)];
 
   //init all values with 0
   for (r=0;r<32;r++){
@@ -226,17 +234,18 @@ void run_convolution_layer1(unsigned char in_layer[], unsigned char y_out[],
  * Output  : the neuron outputs computed from the input pattern
  * Procedure: perform feed forward computation through the neural network
  ********************************************************************************/
-void run_convolution_layer2(unsigned char in_layer[], unsigned char y_out[],
+void run_convolution_layer2(float in_layer[], float y_out[],
                             const float bias[], const float weight[]) {
   int k,l,m,n,q,r,qindex;
   static float y[64*(width/2+2)*(height/2+2)];
-  unsigned char out_layer[64*(width/2+2)*(height/2+2)];
+  float out_layer[64*(width/2+2)*(height/2+2)];
   //feature maps are sparse connected therefore connection scheme is used
   //const int qq[60]={0,1,2, 1,2,3, 2,3,4, 3,4,5, 0,4,5, 0,1,5,
   //                  0,1,2,3, 1,2,3,4, 2,3,4,5, 0,3,4,5, 0,1,4,5, 0,1,2,5,
   //                  0,1,3,4, 1,2,4,5, 0,2,3,5, 0,1,2,3,4,5};
 
   //init all values with 0
+
   for (r=0;r<64;r++){
     for(m=0;m<(width/2+2)*(height/2+2);m++){
       y[r*(width/2+2)*(height/2+2)+m]=0;
@@ -244,23 +253,24 @@ void run_convolution_layer2(unsigned char in_layer[], unsigned char y_out[],
   }
   //init values of feature map at bias value
   for(r=0; r<64; r++){
-    for(q=0; m<(width/2+2)*(height/2+2); m++){
+    for(m=0; m<(width/2+2)*(height/2+2); m++){
       if((m%(width/2+2)!=0) && (m%(width/2+1)!=0))
         y[r*(width/2+2)*(height/2+2)+m]=bias[r];
     }
   }
-
+  printf("sss\n");
   //loops over output feature maps with 3 input feature maps
   for(q=0; q<32; q++){
     for(r=0; r<64; r++){//connect with all connected 3 input feature maps
       //qindex=qq[r*3+q];//lookup connection address
       //convolve weight kernel with input image
-      for(n=0; n<width/2+2; m++){//shift input window over image
-        for(m=0; m<height/2+2; n++){
+      for(n=0; n<width/2+2; n++){//shift input window over image
+        for(m=0; m<height/2+2; m++){
           if((n%(width/2+2)!=0) && (n%(width/2+1)!=0) && m%(height/2+2)!=0 && m%(height/2+1)!=0){
           //multiply input window with kernel
           for(k=0; k<5; k++){
             for(l=0; l<5; l++){
+            	//printf("ss\n");
               y[r*(width/2+2)*(height/2+2)+m*(width/2+2)+n] += in_layer[q*(width/2+1)*(height/2+1)+(m-1)*(width/2+2)+n-1]
                 * weight[(r*32+q)*5*5+k*5+l];
               }
@@ -295,7 +305,7 @@ void run_convolution_layer2(unsigned char in_layer[], unsigned char y_out[],
  * Output  : the neuron outputs computed from the input pattern
  * Procedure: perform feed forward computation through the neural network
  ************************************************************************************/
-void run_convolution_layer3(unsigned char in_layer[], unsigned char out_layer[],
+void run_convolution_layer3(float in_layer[], float out_layer[],
                             const float bias[], const float weight[]) {
   int k,l,m,n,q,r;
   int num = 64*7*7;
@@ -332,14 +342,12 @@ void run_convolution_layer3(unsigned char in_layer[], unsigned char out_layer[],
  * Procedure: perform feed forward computation through the neural network layer
               threshold with neuron output to detect signs at pixel positions
 ************************************************************************************/
-void run_convolution_layer4(unsigned char in_layer[], const float bias[],
-                            const float weight[],unsigned char probabilities[]) {
+void run_convolution_layer4(float in_layer[], const float bias[],
+                            const float weight[], float probabilities[]) {
   int m,n,q,r,i;
   int posx, posy;
   float y[10];
   int set=0;
-
-  float max;
 
   //init values of feature maps at bias value
   for(r=0; r<10; r++)
@@ -377,12 +385,12 @@ int main(void) {
   int i;
   // const int max_speed[8]={0, 30, 50, 60, 70, 80, 90, 100};
   char imagename[100]; 
-  static unsigned char in_image[28*28];//for input image
+  static float in_image[28*28];//for input image
   //feature map results due to unroling+2 otherwise writes outside array
-  static unsigned char net_layer1[32*14*14];
-  static unsigned char net_layer2[64*7*7];
-  static unsigned char net_layer3[1024];
-  unsigned char probabilities[10];
+  static float net_layer1[32*14*14];
+  static float net_layer2[64*7*7];
+  static float net_layer3[1024];
+  float probabilities[10];
 
   static float bias1[32];  //memory for network coefficients
   static float weight1[32*5*5];
@@ -395,7 +403,6 @@ int main(void) {
   
   // static unsigned int detectarray[3*10];
   // int detections;
-
   // clock_t starttime, endtime; //vars for measure computation time
 
   read_bias1("data/bias1.bin", 32, bias1);
@@ -416,25 +423,45 @@ int main(void) {
   //read image from file
   read_image(in_image, imagename, 28, 28);
 
+  for(i=0;i<784;i++){
+  	printf("%f,",weight1[i]);
+  }
+
+  // endtime = clock();
+  // printf("%f\n", 1.0*(endtime-starttime)/CLOCKS_PER_SEC);
+
   // start timer
   // starttime=clock();
         
   //perform feed forward operation thourgh the network
   run_convolution_layer1(in_image, net_layer1, bias1, weight1);
+
+  // endtime = clock();
+  // printf("%f\n", 1.0*(endtime-starttime)/CLOCKS_PER_SEC);
+  printf("\n");
+
+  
   run_convolution_layer2(net_layer1, net_layer2, bias2, weight2);
+  // endtime = clock();
+  // printf("%f\n", 1.0*(endtime-starttime)/CLOCKS_PER_SEC);  
   run_convolution_layer3(net_layer2, net_layer3, bias3, weight3);
-  run_convolution_layer4(net_layer3, bias4, weight4, probabilities);      
+
+  run_convolution_layer4(net_layer3, bias4, weight4, probabilities); 
+
+
 
   //stop timer
   //endtime=clock();
-  int result, max=0;
+
+  int result=0, max=0;
   for(int i=0;i<10;i++){
   	if(probabilities[i]>max){
   		result = i;
   		max = probabilities[i];
   	}
+  	printf("The probabilities for %d is %f\n", i,probabilities[i]);
   }
-  printf(" The classification result is %d s\n",result);
+  printf(" The classification result is %d\n",result);
     
   return 0;
 }
