@@ -22,6 +22,7 @@ import tensorflow as tf
 from tensorflow.python.tools import inspect_checkpoint as chkp
 from tensorflow.python import pywrap_tensorflow
 import pickle
+import os
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -127,6 +128,7 @@ def main(unused_argv):
 	eval_labels = np.asarray(mnist.test.labels, dtype=np.int32)
 
 	# Create the Estimator
+	os.system("rm -r mnist_convnet_model")
 	mnist_classifier = tf.estimator.Estimator(
 			model_fn=cnn_model_fn, model_dir="/Users/qlou/Documents/tensorflow_to_c/mnist_convnet_model")
 
@@ -159,53 +161,62 @@ def main(unused_argv):
 
 	# chkp.print_tensors_in_checkpoint_file("/home/qiuwen/Downloads/tensorflow_to_c/mnist_convnet_model/model.ckpt-120", tensor_name='', all_tensors=True, all_tensor_names=False)
 	# reader = pywrap_tensorflow.NewCheckpointReader("/home/qiuwen/Downloads/tensorflow_to_c/mnist_convnet_model/model.ckpt-240")
-	reader = pywrap_tensorflow.NewCheckpointReader("/Users/qlou/Documents/tensorflow_to_c/mnist_convnet_model/model.ckpt-560")
+	reader = pywrap_tensorflow.NewCheckpointReader("/Users/qlou/Documents/tensorflow_to_c/mnist_convnet_model/model.ckpt-660")
 
 	var_to_shape_map = reader.get_variable_to_shape_map()
 	for key in sorted(var_to_shape_map):
 		# print("tensor_name", key)
 		# print(reader.get_tensor(key))
 		if key == "conv2d/bias":
-			# output_file = open("data/bias1.txt","wb");
-			# pickle.dump(reader.get_tensor(key), output_file)
+			output_file = open("data/bias1.bin","wb");
+			newFileByteArray = bytearray(reader.get_tensor(key))
+			output_file.write(newFileByteArray)
 			np.savetxt('data/bias1.txt',reader.get_tensor(key))
 			print(reader.get_tensor(key).shape)
+			print(np.dtype(reader.get_tensor(key)))
 		elif key == "conv2d/kernel":
-			# output_file = open("data/weight1.bin","wb");
-			# pickle.dump(reader.get_tensor(key), output_file)
+			output_file = open("data/weight1.bin","wb");
+			newFileByteArray = bytearray(reader.get_tensor(key))
+			output_file.write(newFileByteArray)			
 			x = reader.get_tensor(key).reshape((5*5,1*32))
 			np.savetxt('data/weight1.txt',x)
 			print(reader.get_tensor(key).shape)
 		elif key == "conv2d_1/bias":
-			# output_file = open("data/bias2.bin","wb");
-			# pickle.dump(reader.get_tensor(key), output_file)
+			output_file = open("data/bias2.bin","wb");
+			newFileByteArray = bytearray(reader.get_tensor(key))
+			output_file.write(newFileByteArray)	
 			np.savetxt('data/bias2.txt',reader.get_tensor(key))
 			print(reader.get_tensor(key).shape)
 		elif key == "conv2d_1/kernel":
-			# output_file = open("data/weight2.bin","wb");
-			# pickle.dump(reader.get_tensor(key), output_file)
+			output_file = open("data/weight2.bin","wb");
+			newFileByteArray = bytearray(reader.get_tensor(key))
+			output_file.write(newFileByteArray)	
 			x = reader.get_tensor(key).reshape((5*5,32*64))
 			np.savetxt('data/weight2.txt',x)
 			print(reader.get_tensor(key).shape)
 		elif key == "dense/bias":
-			# output_file = open("data/bias3.bin","wb");
-			# pickle.dump(reader.get_tensor(key), output_file)
+			output_file = open("data/bias3.bin","wb");
+			newFileByteArray = bytearray(reader.get_tensor(key))
+			output_file.write(newFileByteArray)	
 			np.savetxt('data/bias3.txt',reader.get_tensor(key))
 			print(reader.get_tensor(key).shape)
 		elif key == "dense/kernel":
-			# output_file = open("data/weight3.bin","wb");
-			# pickle.dump(reader.get_tensor(key), output_file)
+			output_file = open("data/weight3.bin","wb");
+			newFileByteArray = bytearray(reader.get_tensor(key))
+			output_file.write(newFileByteArray)	
 			x = reader.get_tensor(key).reshape
 			np.savetxt('data/weight3.txt',reader.get_tensor(key))
 			print(reader.get_tensor(key).shape)
 		elif key == "dense_1/bias":
-			# output_file = open("data/bias4.bin","wb");
-			# pickle.dump(reader.get_tensor(key), output_file)
+			output_file = open("data/bias4.bin","wb");
+			newFileByteArray = bytearray(reader.get_tensor(key))
+			output_file.write(newFileByteArray)	
 			np.savetxt('data/bias4.txt',reader.get_tensor(key))
 			print(reader.get_tensor(key).shape)
 		elif key == "dense_1/kernel":
-			# output_file = open("data/weight4.bin","wb");
-			# pickle.dump(reader.get_tensor(key), output_file)
+			output_file = open("data/weight4.bin","wb");
+			newFileByteArray = bytearray(reader.get_tensor(key))
+			output_file.write(newFileByteArray)	
 			np.savetxt('data/weight4.txt',reader.get_tensor(key))
 			print(reader.get_tensor(key).shape)
 

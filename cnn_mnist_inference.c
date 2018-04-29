@@ -63,9 +63,11 @@ void read_weight(const char filename[], int size, float matrix[]) {
   
   r = fscanf(finput,"%f ",&matrix[line]);
   while(r!=EOF){
+  	// printf("%d",r);
   	line++;
   	r = fscanf(finput,"%f ", &matrix[line]);
   }
+  printf("%s\n",filename);
   printf("%f, %d",matrix[1],line);
   fclose(finput);
 }
@@ -107,7 +109,7 @@ void read_bias(const char filename[], int size, float matrix[]) {
   	line++;
   	r = fscanf(finput,"%f ", &matrix[line]);
   }
-  printf("%f, %d",matrix[1],line);
+  printf("%f, %d\n",matrix[1],line);
   fclose(finput);
 }
 
@@ -298,7 +300,6 @@ void run_convolution_layer2(float in_layer[], float y_out[],
         y[r*(width/2+2)*(height/2+2)+m]=bias[r];
     }
   }
-  printf("sss\n");
   //loops over output feature maps with 3 input feature maps
   for(q=0; q<32; q++){
     for(r=0; r<64; r++){//connect with all connected 3 input feature maps
@@ -472,9 +473,9 @@ int main(void) {
   //read image from file
   read_image(in_image, imagename, 28, 28);
 
-  for(i=0;i<784;i++){
-  	printf("%f,",weight1[i]);
-  }
+  // for(i=0;i<784;i++){
+  //	printf("%f,",weight1[i]);
+  // }
 
   // endtime = clock();
   // printf("%f\n", 1.0*(endtime-starttime)/CLOCKS_PER_SEC);
@@ -487,7 +488,6 @@ int main(void) {
 
   // endtime = clock();
   // printf("%f\n", 1.0*(endtime-starttime)/CLOCKS_PER_SEC);
-  printf("\n");
 
   
   run_convolution_layer2(net_layer1, net_layer2, bias2, weight2);
