@@ -50,6 +50,26 @@ void read_weight1(const char filename[], int size, float matrix[]) {
   fclose(finput);
 }
 
+void read_weight(const char filename[], int size, float matrix[]) {
+  FILE* finput;
+  // string s[];
+  int r, i=0, line=0;
+
+  finput = fopen(filename , "rb" );
+  if (finput==NULL) {
+  	printf("Error opening the file\n");
+  	exit(EXIT_FAILURE);
+  }
+  
+  r = fscanf(finput,"%f ",&matrix[line]);
+  while(r!=EOF){
+  	line++;
+  	r = fscanf(finput,"%f ", &matrix[line]);
+  }
+  printf("%f, %d",matrix[1],line);
+  fclose(finput);
+}
+
 /************************************************************************************
  * Function: void read_bias(char filename[], int length, float vector[])
  * Input   : char array containing the filename and location for reading, number of bias values this
@@ -68,6 +88,26 @@ void read_bias1(const char filename[], int length, float vector[]) {
   for(i=0; i<length; i++){
     vector[i]=256*vector[i];
   }
+  fclose(finput);
+}
+
+void read_bias(const char filename[], int size, float matrix[]) {
+  FILE* finput;
+  // string s[];
+  int r, i=0, line=0;
+
+  finput = fopen(filename , "rb" );
+  if (finput==NULL) {
+  	printf("Error opening the file\n");
+  	exit(EXIT_FAILURE);
+  }
+  
+  r = fscanf(finput,"%f ",&matrix[line]);
+  while(r!=EOF){
+  	line++;
+  	r = fscanf(finput,"%f ", &matrix[line]);
+  }
+  printf("%f, %d",matrix[1],line);
   fclose(finput);
 }
 
@@ -394,6 +434,7 @@ int main(void) {
 
   static float bias1[32];  //memory for network coefficients
   static float weight1[32*5*5];
+  static float weight[32*5*5];
   static float bias2[64];
   static float weight2[64*5*5];
   static float bias3[1024];
@@ -405,17 +446,25 @@ int main(void) {
   // int detections;
   // clock_t starttime, endtime; //vars for measure computation time
 
-  read_bias1("data/bias1.bin", 32, bias1);
-  read_weight1("data/weight1.bin", 32*5*5, weight1);
+  // read_bias1("data/bias1.bin", 32, bias1);
+  read_bias("data/bias1.txt", 32, bias1);
+  // read_weight1("data/weight1.bin", 32*5*5, weight1);
+  read_weight("data/weight1.txt", 32*5*5, weight1);
 
-  read_bias1("data/bias2.bin", 64, bias2);
-  read_weight1("data/weight2.bin", 64*5*5, weight2);
+  // read_bias1("data/bias2.bin", 64, bias2);
+  read_bias("data/bias2.txt", 64, bias2);
+  // read_weight1("data/weight2.bin", 64*5*5, weight2);
+  read_weight("data/weight2.txt", 64*5*5, weight2);
 
-  read_bias1("data/bias3.bin", 1024, bias3);
-  read_weight1("data/weight3.bin", 7*7*64*1024, weight3);
+  // read_bias1("data/bias3.bin", 1024, bias3);
+  read_bias("data/bias3.txt", 1024, bias3);
+  // read_weight1("data/weight3.bin", 7*7*64*1024, weight3);
+  read_weight("data/weight3.txt", 7*7*64*1024, weight3);
 
-  read_bias1("data/bias4.bin", 10, bias4);
-  read_weight1("data/weight4.bin", 1024*10, weight4);
+  // read_bias1("data/bias4.bin", 10, bias4);
+  read_bias("data/bias4.txt", 10, bias4);
+  // read_weight1("data/weight4.bin", 1024*10, weight4);
+  read_weight("data/weight4.txt", 1024*10, weight4);
 
   //compute input name
   sprintf(imagename,"MNIST_images/input0.pgm");

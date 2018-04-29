@@ -159,7 +159,7 @@ def main(unused_argv):
 
 	# chkp.print_tensors_in_checkpoint_file("/home/qiuwen/Downloads/tensorflow_to_c/mnist_convnet_model/model.ckpt-120", tensor_name='', all_tensors=True, all_tensor_names=False)
 	# reader = pywrap_tensorflow.NewCheckpointReader("/home/qiuwen/Downloads/tensorflow_to_c/mnist_convnet_model/model.ckpt-240")
-	reader = pywrap_tensorflow.NewCheckpointReader("/Users/qlou/Documents/tensorflow_to_c/mnist_convnet_model/model.ckpt-380")
+	reader = pywrap_tensorflow.NewCheckpointReader("/Users/qlou/Documents/tensorflow_to_c/mnist_convnet_model/model.ckpt-560")
 
 	var_to_shape_map = reader.get_variable_to_shape_map()
 	for key in sorted(var_to_shape_map):
@@ -173,7 +173,8 @@ def main(unused_argv):
 		elif key == "conv2d/kernel":
 			# output_file = open("data/weight1.bin","wb");
 			# pickle.dump(reader.get_tensor(key), output_file)
-			np.savetxt('data/weight1.txt',reader.get_tensor(key))
+			x = reader.get_tensor(key).reshape((5*5,1*32))
+			np.savetxt('data/weight1.txt',x)
 			print(reader.get_tensor(key).shape)
 		elif key == "conv2d_1/bias":
 			# output_file = open("data/bias2.bin","wb");
@@ -183,7 +184,8 @@ def main(unused_argv):
 		elif key == "conv2d_1/kernel":
 			# output_file = open("data/weight2.bin","wb");
 			# pickle.dump(reader.get_tensor(key), output_file)
-			np.savetxt('data/weight2.txt',reader.get_tensor(key))
+			x = reader.get_tensor(key).reshape((5*5,32*64))
+			np.savetxt('data/weight2.txt',x)
 			print(reader.get_tensor(key).shape)
 		elif key == "dense/bias":
 			# output_file = open("data/bias3.bin","wb");
@@ -193,6 +195,7 @@ def main(unused_argv):
 		elif key == "dense/kernel":
 			# output_file = open("data/weight3.bin","wb");
 			# pickle.dump(reader.get_tensor(key), output_file)
+			x = reader.get_tensor(key).reshape
 			np.savetxt('data/weight3.txt',reader.get_tensor(key))
 			print(reader.get_tensor(key).shape)
 		elif key == "dense_1/bias":
