@@ -127,10 +127,11 @@ def main(unused_argv):
 	eval_data = mnist.test.images  # Returns np.array
 	eval_labels = np.asarray(mnist.test.labels, dtype=np.int32)
 
+	if(os.path.exists("mnist_convnet_model")):
+		os.system("rm -r mnist_convnet_model")
 	# Create the Estimator
-	os.system("rm -r mnist_convnet_model")
 	mnist_classifier = tf.estimator.Estimator(
-			model_fn=cnn_model_fn, model_dir="/Users/qlou/Documents/tensorflow_to_c/mnist_convnet_model")
+			model_fn=cnn_model_fn, model_dir="mnist_convnet_model")
 
 	# Set up logging for predictions
 	# Log the values in the "Softmax" tensor with label "probabilities"
@@ -161,7 +162,7 @@ def main(unused_argv):
 
 	# chkp.print_tensors_in_checkpoint_file("/home/qiuwen/Downloads/tensorflow_to_c/mnist_convnet_model/model.ckpt-120", tensor_name='', all_tensors=True, all_tensor_names=False)
 	# reader = pywrap_tensorflow.NewCheckpointReader("/home/qiuwen/Downloads/tensorflow_to_c/mnist_convnet_model/model.ckpt-240")
-	reader = pywrap_tensorflow.NewCheckpointReader("/Users/qlou/Documents/tensorflow_to_c/mnist_convnet_model/model.ckpt-660")
+	reader = pywrap_tensorflow.NewCheckpointReader("/Users/qlou/Documents/tensorflow_to_c/mnist_convnet_model/model.ckpt-20")
 
 	var_to_shape_map = reader.get_variable_to_shape_map()
 	for key in sorted(var_to_shape_map):
@@ -173,11 +174,15 @@ def main(unused_argv):
 			output_file.write(newFileByteArray)
 			np.savetxt('data/bias1.txt',reader.get_tensor(key))
 			print(reader.get_tensor(key).shape)
-			print(np.dtype(reader.get_tensor(key)))
+			# print(np.dtype(reader.get_tensor(key)[0]))
 		elif key == "conv2d/kernel":
 			output_file = open("data/weight1.bin","wb");
 			newFileByteArray = bytearray(reader.get_tensor(key))
-			output_file.write(newFileByteArray)			
+			output_file.write(newFileByteArray)
+			for i in range(0,5):
+				for j in range(0,5):
+					print("%f,",reader.get_tensor(key)[i,j,0,0])
+				print("\n")
 			x = reader.get_tensor(key).reshape((5*5,1*32))
 			np.savetxt('data/weight1.txt',x)
 			print(reader.get_tensor(key).shape)

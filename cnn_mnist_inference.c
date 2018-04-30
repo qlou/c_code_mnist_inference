@@ -40,6 +40,53 @@ double max(double a, double b) {
     return a<b ? a : b;
 }
 
+int reverseInt (int i) 
+{
+    unsigned char c1, c2, c3, c4;
+
+    c1 = i & 255;
+    c2 = (i >> 8) & 255;
+    c3 = (i >> 16) & 255;
+    c4 = (i >> 24) & 255;
+
+    return ((int)c1 << 24) + ((int)c2 << 16) + ((int)c3 << 8) + c4;
+}
+
+/*
+void read_mnist("MNIST-data")
+{
+    // ifstream file ("t10k-images-idx3-ubyte.gz");
+    FILE* finput;
+    finput = fopen("MNIST-data/t10k-images-idx3-ubyte.gz");
+    if (finput!=EOF)
+    {
+        int magic_number=0;
+        int number_of_images=0;
+        int n_rows=0;
+        int n_cols=0;
+        fread((char*)&magic_number,sizeof(magic_number)); 
+        magic_number= reverseInt(magic_number);
+        fread((char*)&number_of_images,sizeof(number_of_images));
+        number_of_images= reverseInt(number_of_images);
+        fread((char*)&n_rows,sizeof(n_rows));
+        n_rows= reverseInt(n_rows);
+        fread((char*)&n_cols,sizeof(n_cols));
+        n_cols= reverseInt(n_cols);
+        for(int i=0;i<number_of_images;++i)
+        {
+            for(int r=0;r<n_rows;++r)
+            {
+                for(int c=0;c<n_cols;++c)
+                {
+                    unsigned char temp=0;
+                    file.read((char*)&temp,sizeof(temp));
+
+                }
+            }
+        }
+    }
+}
+*/
 void read_weight1(const char filename[], int size, float matrix[]) {
   FILE* finput;
     
@@ -50,27 +97,6 @@ void read_weight1(const char filename[], int size, float matrix[]) {
   fclose(finput);
 }
 
-void read_weight(const char filename[], int size, float matrix[]) {
-  FILE* finput;
-  // string s[];
-  int r, i=0, line=0;
-
-  finput = fopen(filename , "rb" );
-  if (finput==NULL) {
-  	printf("Error opening the file\n");
-  	exit(EXIT_FAILURE);
-  }
-  
-  r = fscanf(finput,"%f ",&matrix[line]);
-  while(r!=EOF){
-  	// printf("%d",r);
-  	line++;
-  	r = fscanf(finput,"%f ", &matrix[line]);
-  }
-  printf("%s\n",filename);
-  printf("%f, %d",matrix[1],line);
-  fclose(finput);
-}
 
 /************************************************************************************
  * Function: void read_bias(char filename[], int length, float vector[])
@@ -90,26 +116,6 @@ void read_bias1(const char filename[], int length, float vector[]) {
   for(i=0; i<length; i++){
     vector[i]=256*vector[i];
   }
-  fclose(finput);
-}
-
-void read_bias(const char filename[], int size, float matrix[]) {
-  FILE* finput;
-  // string s[];
-  int r, i=0, line=0;
-
-  finput = fopen(filename , "rb" );
-  if (finput==NULL) {
-  	printf("Error opening the file\n");
-  	exit(EXIT_FAILURE);
-  }
-  
-  r = fscanf(finput,"%f ",&matrix[line]);
-  while(r!=EOF){
-  	line++;
-  	r = fscanf(finput,"%f ", &matrix[line]);
-  }
-  printf("%f, %d\n",matrix[1],line);
   fclose(finput);
 }
 
@@ -245,7 +251,7 @@ void run_convolution_layer1(float in_layer[], float y_out[],
         if((n%(width+2)!=0) && (n%(width+1)!=0) && m%(height+2)!=0 && m%(height+1)!=0){
           for(l=0; l<5; l++){
             for(k=0; k<5; k++){
-              y[r*(width+2)*(height+2)+m*(width+2)+n] += in_layer[(m-1)*height+n-1] * weight[r*32+k*5+l];
+              y[r*(width+2)*(height+2)+m*(width+2)+n] += in_layer[(m-1)*height+n-1] * weight[(k+l*5)*32+r];
             }
           }
         }
@@ -313,7 +319,7 @@ void run_convolution_layer2(float in_layer[], float y_out[],
             for(l=0; l<5; l++){
             	//printf("ss\n");
               y[r*(width/2+2)*(height/2+2)+m*(width/2+2)+n] += in_layer[q*(width/2+1)*(height/2+1)+(m-1)*(width/2+2)+n-1]
-                * weight[(r*32+q)*5*5+k*5+l];
+                * weight[(r*32+q)*64+(k*5+l)*32*64];
               }
             }
           }
@@ -447,25 +453,25 @@ int main(void) {
   // int detections;
   // clock_t starttime, endtime; //vars for measure computation time
 
-  // read_bias1("data/bias1.bin", 32, bias1);
-  read_bias("data/bias1.txt", 32, bias1);
-  // read_weight1("data/weight1.bin", 32*5*5, weight1);
-  read_weight("data/weight1.txt", 32*5*5, weight1);
+  read_bias1("data/bias1.bin", 32, bias1);
+  // read_bias("data/bias1.txt", 32, bias1);
+  read_weight1("data/weight1.bin", 32*5*5, weight1);
+  // read_weight("data/weight1.txt", 32*5*5, weight1);
 
-  // read_bias1("data/bias2.bin", 64, bias2);
-  read_bias("data/bias2.txt", 64, bias2);
-  // read_weight1("data/weight2.bin", 64*5*5, weight2);
-  read_weight("data/weight2.txt", 64*5*5, weight2);
+  read_bias1("data/bias2.bin", 64, bias2);
+  // read_bias("data/bias2.txt", 64, bias2);
+  read_weight1("data/weight2.bin", 64*5*5, weight2);
+  // read_weight("data/weight2.txt", 64*5*5, weight2);
 
-  // read_bias1("data/bias3.bin", 1024, bias3);
-  read_bias("data/bias3.txt", 1024, bias3);
-  // read_weight1("data/weight3.bin", 7*7*64*1024, weight3);
-  read_weight("data/weight3.txt", 7*7*64*1024, weight3);
+  read_bias1("data/bias3.bin", 1024, bias3);
+  // read_bias("data/bias3.txt", 1024, bias3);
+  read_weight1("data/weight3.bin", 7*7*64*1024, weight3);
+  // read_weight("data/weight3.txt", 7*7*64*1024, weight3);
 
-  // read_bias1("data/bias4.bin", 10, bias4);
-  read_bias("data/bias4.txt", 10, bias4);
-  // read_weight1("data/weight4.bin", 1024*10, weight4);
-  read_weight("data/weight4.txt", 1024*10, weight4);
+  read_bias1("data/bias4.bin", 10, bias4);
+  // read_bias("data/bias4.txt", 10, bias4);
+  read_weight1("data/weight4.bin", 1024*10, weight4);
+  // read_weight("data/weight4.txt", 1024*10, weight4);
 
   //compute input name
   sprintf(imagename,"MNIST_images/input0.pgm");
@@ -473,9 +479,12 @@ int main(void) {
   //read image from file
   read_image(in_image, imagename, 28, 28);
 
-  // for(i=0;i<784;i++){
-  //	printf("%f,",weight1[i]);
-  // }
+  for(i=0;i<800;i++){
+  	printf("%f,",weight1[i]);
+  	if((i+1)%32==0){
+  		printf("\n");
+  	}
+  }
 
   // endtime = clock();
   // printf("%f\n", 1.0*(endtime-starttime)/CLOCKS_PER_SEC);
@@ -508,7 +517,7 @@ int main(void) {
   		result = i;
   		max = probabilities[i];
   	}
-  	printf("The probabilities for %d is %f\n", i,probabilities[i]);
+  	printf("The probabilities for %d is %f\n", i, probabilities[i]);
   }
   printf(" The classification result is %d\n",result);
     
