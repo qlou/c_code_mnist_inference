@@ -52,41 +52,23 @@ int reverseInt (int i)
     return ((int)c1 << 24) + ((int)c2 << 16) + ((int)c3 << 8) + c4;
 }
 
-/*
-void read_mnist("MNIST-data")
-{
-    // ifstream file ("t10k-images-idx3-ubyte.gz");
-    FILE* finput;
-    finput = fopen("MNIST-data/t10k-images-idx3-ubyte.gz");
-    if (finput!=EOF)
-    {
-        int magic_number=0;
-        int number_of_images=0;
-        int n_rows=0;
-        int n_cols=0;
-        fread((char*)&magic_number,sizeof(magic_number)); 
-        magic_number= reverseInt(magic_number);
-        fread((char*)&number_of_images,sizeof(number_of_images));
-        number_of_images= reverseInt(number_of_images);
-        fread((char*)&n_rows,sizeof(n_rows));
-        n_rows= reverseInt(n_rows);
-        fread((char*)&n_cols,sizeof(n_cols));
-        n_cols= reverseInt(n_cols);
-        for(int i=0;i<number_of_images;++i)
-        {
-            for(int r=0;r<n_rows;++r)
-            {
-                for(int c=0;c<n_cols;++c)
-                {
-                    unsigned char temp=0;
-                    file.read((char*)&temp,sizeof(temp));
 
-                }
-            }
-        }
-    }
+void read_mnist(const char filename[], int length, float vector[])
+{
+  int i;
+  FILE* finput;
+  printf("%s\n",filename);
+  finput = fopen(filename , "rb" );
+  if (finput==NULL) {fputs ("File error",stderr); exit (13);}
+  
+  fread(vector, sizeof(float), length, finput);
+  for(i=0; i<length; i++){
+    vector[i]=vector[i];
+  }
+  fclose(finput);
 }
-*/
+
+
 void read_weight1(const char filename[], int size, float matrix[]) {
   FILE* finput;
     
@@ -432,6 +414,7 @@ int main(void) {
   int i;
   // const int max_speed[8]={0, 30, 50, 60, 70, 80, 90, 100};
   char imagename[100]; 
+  char file_path[200];
   static float in_image[28*28];//for input image
   //feature map results due to unroling+2 otherwise writes outside array
   static float net_layer1[32*14*14];
@@ -474,17 +457,18 @@ int main(void) {
   // read_weight("data/weight4.txt", 1024*10, weight4);
 
   //compute input name
-  sprintf(imagename,"MNIST_images/input0.pgm");
+  // sprintf(imagename,"MNIST_images/input0.pgm");
   //imagename = "MNIST_images/input0.pgm";
   //read image from file
-  read_image(in_image, imagename, 28, 28);
+  sprintf(file_path,"MNIST_images/image0.bin");
+  read_mnist(file_path, 784, in_image);
 
-  for(i=0;i<800;i++){
-  	printf("%f,",weight1[i]);
-  	if((i+1)%32==0){
-  		printf("\n");
-  	}
-  }
+  //for(i=0;i<800;i++){
+  //	printf("%f,",weight1[i]);
+  //	if((i+1)%32==0){
+  //		printf("\n");
+  //	}
+  //}
 
   // endtime = clock();
   // printf("%f\n", 1.0*(endtime-starttime)/CLOCKS_PER_SEC);
@@ -506,7 +490,9 @@ int main(void) {
 
   run_convolution_layer4(net_layer3, bias4, weight4, probabilities); 
 
-
+  for (i=200;i<300;i++){
+  	printf("%f,",net_layer1[i]);
+  }
 
   //stop timer
   //endtime=clock();

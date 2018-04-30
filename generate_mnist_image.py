@@ -22,6 +22,8 @@ import array
 import random
 from tensorflow.python.platform import flags
 from PIL import Image
+import scipy.misc
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_dir', type=str, default='/tmp/tensorflow/mnist/input_data',
@@ -47,17 +49,28 @@ for i in range(n_images):
 	width = 28
 	height = 28
 
-	filename = "MNIST_images/input" + str(i) + ".pgm"
+	bin_img_path = "MNIST_images/image" + str(i) + ".bin"
+	
+	output_file = open(bin_img_path,"wb");
 
-	fout = open(filename, 'wb')
+	newFileByteArray = bytearray(test_x)
+	output_file.write(newFileByteArray)
 
-	pgmHeader = 'P5' + '\n' + str(width) + '  ' + str(height) + '  ' + str(255) + '\n'
+	jpg_img_path = "MNIST_images/input" + str(i) + ".jpg"
 
-	fout.write(pgmHeader)
+	# im = Image.fromarray(test_x)
+	# im.save(jpg_img_path)
+	scipy.misc.imsave(jpg_img_path, test_x)
+
+	# fout = open(jpg_img_path, 'wb')
+
+	# pgmHeader = 'P5' + '\n' + str(width) + '  ' + str(height) + '  ' + str(255) + '\n'
+
+	# fout.write(pgmHeader)
 
 	# test_x.tofile(fout)
 	print(test_x)
-	fout.close()
+	# fout.close()
 	# print(test_x)
 	# im = Image.fromarray(test_x*255)
 	# if im.mode != 'RGB':
