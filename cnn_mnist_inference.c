@@ -37,7 +37,7 @@ double min(double a, double b) {
 }
 
 double max(double a, double b) {
-    return a<b ? a : b;
+    return a>b ? a : b;
 }
 
 int reverseInt (int i) 
@@ -101,101 +101,6 @@ void read_bias1(const char filename[], int length, float vector[]) {
   fclose(finput);
 }
 
-void read_image(float image_float[], char filename[], int imageWidth, int imageHeight)
-{   /************************************************************************************
-     * Function: void read_image_pgm(unsigned char image[], char filename[], int imageWidth, int imageHeight)
-     * Input   : uchar array pointer for output result, char array with filename, int with with, int with height
-     * Output  : uchar image array
-     * Procedure: if image dimensions and layout pgm correct imare is read from file to image array
-     ************************************************************************************/
-  int grayMax;
-  int PGM_HEADER_LINES=3;
-  FILE* input;
-  unsigned char image[30*30];
-
-  int headerLines = 1;
-  int scannedLines= 0;
-  long int counter =0;
-
-  //read header strings
-  char *lineBuffer = (char *) malloc(LINE_BUFFER_SIZE+1);
-  char *split;
-  char *format = (char *) malloc(LINE_BUFFER_SIZE+1);
-  char P5[]="P5";
-  char comments[LINE_BUFFER_SIZE+1];
-
-  //open the input PGM file
-  input=fopen(filename, "rb");
-
-  //read the input PGM file header
-  while(scannedLines < headerLines){
-    fgets(lineBuffer, LINE_BUFFER_SIZE, input);
-    //if not comments
-    if(lineBuffer[0] != '#'){
-      scannedLines += 1;
-      //read the format
-      if(scannedLines==1){
-        split=strtok(lineBuffer, " \n");
-        strcpy(format,split);
-        if(strcmp(format,P5) == 0){
-          //printf("FORMAT: %s\n",format);
-          headerLines=PGM_HEADER_LINES;
-        }
-        else
-        {
-          printf("Only PGM P5 format is support. \n");
-        }
-      }
-      //read width and height
-      if (scannedLines==2)
-      {
-        split=strtok(lineBuffer, " \n");
-        if(imageWidth == atoi(split)){ //check if width matches description
-          //printf("WIDTH: %d, ", imageWidth);
-        }
-        else{
-          printf("input frame has wrong width should be WIDTH: %d, ", imageWidth);
-          exit(4);
-        }
-        split = strtok (NULL, " \n");
-        if(imageHeight == atoi(split)){ //check if heigth matches description
-          //printf("HEIGHT: %d\n", imageHeight);
-        }
-        else{
-          printf("input frame has wrong height should be HEIGHT: %d, ", imageHeight);
-          exit(4);
-        }
-      }
-      // read maximum gray value
-      if (scannedLines==3)
-      {
-        split=strtok(lineBuffer, " \n");
-        grayMax = atoi(split);
-        //printf("GRAYMAX: %d\n", grayMax);
-      }
-    }
-    else
-    {
-      strcpy(comments,lineBuffer);
-      //printf("comments: %s", comments);
-    }
-  }
-
-  counter = fread(image, sizeof(unsigned char), imageWidth * imageHeight, input);
-  //printf("pixels read: %d\n",counter);
-  int i;
-  for (i=0;i<784;i++){
-  	image_float[i] = (float)(image[i])/255;   
-  }
-  
-  //for(i=0;i<784;i++){
-  //	printf("%f,",image_float[i]);
-  //}
-  //close the input pgm file and free line buffer
-  fclose(input);
-  free(lineBuffer);
-  free(format);
-}
 
 /************************************************************************************
  * Input   : input image, pointer to output result, coefficients bias and weights
@@ -207,56 +112,81 @@ void read_image(float image_float[], char filename[], int imageWidth, int imageH
 void run_convolution_layer1(float in_layer[], float y_out[],
                             const float bias[], const float weight[]) {
   int k,l,m,n,r;
-  static float y[32*(width+2)*(height+2)];
-  float out_layer[32*(width+2)*(height+2)];
+  float y[32*(width+4)*(height+4)];
+  float out_layer[32*(width+4)*(height+4)];
 
   //init all values with 0
   for (r=0;r<32;r++){
-    for(m=0;m<(width+2)*(height+2);m++){
-      y[r*(width+2)*(height+2)+m]=0;
+    for(m=0;m<(width+4)*(height+4);m++){
+      y[r*(width+4)*(height+4)+m]=0;
     }
   }
   //init values of feature maps at bias value
   for(r=0; r<32; r++){
-    for(m=width+2; m<(width+2)*(height+1); m++){
-      if((m%(width+2)!=0) && (m%(width+1)!=0))
-        y[r*(width+1)*(height+1)+m]=bias[r];
+    for(m=0; m<(width+4)*(height+4); m++){
+      if((m%(width+4)!=0) && (m%(width+4)!=1) && (m%(width+4)!=30) && (m%(width+4)!=31) && (m>(width+2)*2) && m<(width+2)*30)
+        y[r*(width+4)*(height+4)+m]=bias[r];
     }
   }  
-
   //loop over output feature maps
-  for(r=0; r<32; r++){
+  // for(r=0; r<32; r++){
+    for(r=0;r<1;r++){
     //convolve weight kernel with input image
-    for(n=0; n<width+2; n++){
-      for(m=0; m<height+2; m++){//shift input window over image
+    for(n=0; n<width+4; n++){
+      for(m=0; m<height+4; m++){//shift input window over image
         //multiply input window with kernel
-        if((n%(width+2)!=0) && (n%(width+1)!=0) && m%(height+2)!=0 && m%(height+1)!=0){
+        if((n%(width+4)!=0) && (n%(width+4)!=1) && (n%(width+4)!=30) && (n%(width+4)!=31) 
+        	&& (m%(height+4)!=0) && (m%(height+4)!=0) && (m%(height+4)!=30) && (m%(height+4)!=31)){
           for(l=0; l<5; l++){
             for(k=0; k<5; k++){
-              y[r*(width+2)*(height+2)+m*(width+2)+n] += in_layer[(m-1)*height+n-1] * weight[(k+l*5)*32+r];
+              y[r*(width+4)*(height+4)+m*(height+4)+n] += in_layer[(m-2)*height+n-2] * weight[(k+l*5)*32+r];
+              // if(m>10 && m<18 && n>10 && n<18)
+              	// printf("%f,%f\n",in_layer[(m-2)*height+n-2],weight[(k+l*5)*32+r]);
             }
           }
         }
+        //printf("%f\n",y[r*(width+4)*(height+4)+m*(height+4)+n]);
       }
     }
   }
+
+
   
   //relu activation function
-  for(r=0; r<32*(width+2)*(height+2); r++){
+  for(r=0; r<32*(width+4)*(height+4); r++){
     if(y[r]>0)
       out_layer[r] = y[r];
     else
       out_layer[r] = 0;
   }
 
+  // for(int i=1;i<784;i++){
+  //	printf("%d,%f\n",i,out_layer[i]);
+  //}
   //pooling with stride 2
+  int n_new=-1;
+  int m_new;
+  int test=0;
   for(r=0;r<32;r++)
-  	for(n=1;n<(width+2)/2;n++)
-  		for(m=1;m<(height+2)/2;m++)
-  			if((n%(width+2)!=0) && (n%(width+1)!=0) && m%(height+2)!=0 && m%(height+1)!=0){
-  				y_out[(n-1)*height+m] = max(max(out_layer[n*height+m],out_layer[n*height+m+1]),max(out_layer[(n+1)*height+m],out_layer[(n+1)*height+m+1]));
-  			}
-  
+  // for(r=0;r<1;r++)
+  	for(n=2;n<width+2;n=n+2){
+  		n_new++;
+  		m_new = -1;
+  		for(m=2;m<height+2;m=m+2){
+  			test++;
+  			m_new++;
+  			y_out[r*width/2*height/2+n_new*height/2+m_new] = max(max(out_layer[r*(height+4)*(width+4)+n*(height+4)+m]
+  				,out_layer[r*(height+4)*(width+4)+n*(height+4)+m+1]),
+  					max(out_layer[r*(height+4)*(width+4)+(n+1)*(height+4)+m],
+  						out_layer[r*(height+4)*(width+4)+(n+1)*(height+4)+m+1]));
+  			// if(n<28 && m<28){
+  			//	printf("%d,%d,%d,%d\n",n*(height+4)+m,n*(height+4)+m+1,(n+1)*(height+4)+m,(n+1)*(height+4)+m+1);
+  			//	printf("%f,%f,%f,%f\n",out_layer[n*height+m],out_layer[n*height+m+1],out_layer[(n+1)*height+m],out_layer[(n+1)*height+m+1]);
+  			// }
+  				// printf("%f\n",y_out[n_new*height/2+m_new]);
+  		}
+  	}
+
 }
 
 /********************************************************************************
@@ -267,25 +197,20 @@ void run_convolution_layer1(float in_layer[], float y_out[],
 void run_convolution_layer2(float in_layer[], float y_out[],
                             const float bias[], const float weight[]) {
   int k,l,m,n,q,r,qindex;
-  static float y[64*(width/2+2)*(height/2+2)];
-  float out_layer[64*(width/2+2)*(height/2+2)];
-  //feature maps are sparse connected therefore connection scheme is used
-  //const int qq[60]={0,1,2, 1,2,3, 2,3,4, 3,4,5, 0,4,5, 0,1,5,
-  //                  0,1,2,3, 1,2,3,4, 2,3,4,5, 0,3,4,5, 0,1,4,5, 0,1,2,5,
-  //                  0,1,3,4, 1,2,4,5, 0,2,3,5, 0,1,2,3,4,5};
-
-  //init all values with 0
+  static float y[64*(width/2+4)*(height/2+4)];
+  float out_layer[64*(width/2+4)*(height/2+4)];
 
   for (r=0;r<64;r++){
-    for(m=0;m<(width/2+2)*(height/2+2);m++){
-      y[r*(width/2+2)*(height/2+2)+m]=0;
+    for(m=0;m<(width/2+4)*(height/2+4);m++){
+      y[r*(width/2+4)*(height/2+4)+m]=0;
     }
   }
   //init values of feature map at bias value
   for(r=0; r<64; r++){
-    for(m=0; m<(width/2+2)*(height/2+2); m++){
-      if((m%(width/2+2)!=0) && (m%(width/2+1)!=0))
-        y[r*(width/2+2)*(height/2+2)+m]=bias[r];
+  	for(m=0;m<(width/2+4)*(height/2+4);m++){
+    	if((m%(width/2+4)!=0) && (m%(width/2+4)!=1) && (m%(width/2+4)!=30) && (m%(width/2+4)!=31) && (m>(width/2+4)*2) && m<(width/2+4)*30){
+        	y[r*(width/2+4)*(height/2+4)+m]=bias[r];
+  		}
     }
   }
   //loops over output feature maps with 3 input feature maps
@@ -293,15 +218,15 @@ void run_convolution_layer2(float in_layer[], float y_out[],
     for(r=0; r<64; r++){//connect with all connected 3 input feature maps
       //qindex=qq[r*3+q];//lookup connection address
       //convolve weight kernel with input image
-      for(n=0; n<width/2+2; n++){//shift input window over image
-        for(m=0; m<height/2+2; m++){
-          if((n%(width/2+2)!=0) && (n%(width/2+1)!=0) && m%(height/2+2)!=0 && m%(height/2+1)!=0){
-          //multiply input window with kernel
-          for(k=0; k<5; k++){
-            for(l=0; l<5; l++){
-            	//printf("ss\n");
-              y[r*(width/2+2)*(height/2+2)+m*(width/2+2)+n] += in_layer[q*(width/2+1)*(height/2+1)+(m-1)*(width/2+2)+n-1]
-                * weight[(r*32+q)*64+(k*5+l)*32*64];
+      for(n=0; n<width/2+4; n++){//shift input window over image
+        for(m=0; m<height/2+4; m++){
+          if((n%(width/2+4)!=0) && (n%(width/2+4)!=1) && (m%(width/2+4)!=30) && (m%(width/2+4)!=31) 
+          	&& (m>(width/2+4)*2) && (m<(width/2+4)*30)){
+          	//multiply input window with kernel
+          	for(k=0; k<5; k++){
+            	for(l=0; l<5; l++){
+              		y[r*(width/4+4)*(height/4+4)+m*(width/4+4)+n] += in_layer[q*(width/2+2)*(height/2+1)+(m-1)*(width/2+2)+n-1]
+                		* weight[(r*32+q)*64+(k*5+l)*32*64];
               }
             }
           }
@@ -310,9 +235,14 @@ void run_convolution_layer2(float in_layer[], float y_out[],
     }
   }
 
+  double sum=0;
+  for(r=0; r<64*(width/4)*(height/4); r++){
+  	sum = sum+y_out[r];
+  }
+  printf("%f\n",sum);
 
   //relu activation function
-  for(r=0; r<64*(width/2+2)*(height/2+2); r++){
+  for(r=0; r<64*(width/2+4)*(height/2+4); r++){
     if(y[r]>0)
       out_layer[r] = y[r];
     else
@@ -320,13 +250,19 @@ void run_convolution_layer2(float in_layer[], float y_out[],
   }
 
   //pooling with stride 2
-  for(r=0;r<32;r++)
-  	for(n=1;n<(width/2+2)/2;n++)
-  		for(m=1;m<(height/2+2)/2;m++)
-  			if((n%(width/2+2)!=0) && (n%(width/2+1)!=0) && m%(height/2+2)!=0 && m%(height/2+1)!=0){
-  				y_out[(n-1)*height/4+m] = max(max(out_layer[n*(height/2+2)+m],out_layer[n*(height/2+2)+m+1]),max(out_layer[(n+1)*(height/2+2)+m],out_layer[(n+1)*(height/2+2)+m+1]));
-  			}
-  
+  int n_new=-1, m_new=-1;
+  for(r=0;r<64;r++)
+  	for(n=2;n<width+2;n=n+2){
+  		n_new++;
+  		m_new = -1;
+  		for(m=2;m<height+2;m=m+2){
+  			m_new++;
+  			y_out[r*width/4*height/4+n_new*height/4+m_new] = max(max(out_layer[r*(height/2+4)*(width/2+4)+n*(height/2+4)+m]
+  				,out_layer[r*(height/2+4)*(width/2+4)+n*(height/2+4)+m+1]),
+  					max(out_layer[r*(height/2+4)*(width/2+4)+(n+1)*(height/2+4)+m],
+  						out_layer[r*(height/2+4)*(width/2+4)+(n+1)*(height/2+4)+m+1]));  		}
+  	}
+
 }
 
 /************************************************************************************
@@ -431,6 +367,8 @@ int main(void) {
   static float weight3[7*7*64*1024];
   static float bias4[10];
   static float weight4[1024*10]; 
+
+
   
   // static unsigned int detectarray[3*10];
   // int detections;
@@ -460,25 +398,12 @@ int main(void) {
   // sprintf(imagename,"MNIST_images/input0.pgm");
   //imagename = "MNIST_images/input0.pgm";
   //read image from file
-  sprintf(file_path,"MNIST_images/image0.bin");
+
+  sprintf(file_path,"MNIST_images/image2.bin");
   read_mnist(file_path, 784, in_image);
-
-  //for(i=0;i<800;i++){
-  //	printf("%f,",weight1[i]);
-  //	if((i+1)%32==0){
-  //		printf("\n");
-  //	}
-  //}
-
-  // endtime = clock();
-  // printf("%f\n", 1.0*(endtime-starttime)/CLOCKS_PER_SEC);
-
-  // start timer
-  // starttime=clock();
         
   //perform feed forward operation thourgh the network
   run_convolution_layer1(in_image, net_layer1, bias1, weight1);
-
   // endtime = clock();
   // printf("%f\n", 1.0*(endtime-starttime)/CLOCKS_PER_SEC);
 
@@ -490,18 +415,12 @@ int main(void) {
 
   run_convolution_layer4(net_layer3, bias4, weight4, probabilities); 
 
-  for (i=200;i<300;i++){
-  	printf("%f,",net_layer1[i]);
-  }
-
-  //stop timer
-  //endtime=clock();
-
-  int result=0, max=0;
+  int result=0; 
+  float max_number=0;
   for(int i=0;i<10;i++){
-  	if(probabilities[i]>max){
+  	if(probabilities[i]>max_number){
   		result = i;
-  		max = probabilities[i];
+  		max_number = probabilities[i];
   	}
   	printf("The probabilities for %d is %f\n", i, probabilities[i]);
   }
