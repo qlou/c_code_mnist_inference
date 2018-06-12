@@ -37,7 +37,10 @@ parser.add_argument(
 FLAGS, unparsed = parser.parse_known_args()
 
 mnist = input_data.read_data_sets(FLAGS.data_dir)
-n_images = 10
+n_images = 1
+
+if (os.path.isdir("image_data")==False):
+	os.system("mkdir image_data")
 for i in range(n_images):
 	index_array = random.randint(0,9999)
 	test_x = np.zeros((1,784))
@@ -49,33 +52,15 @@ for i in range(n_images):
 	width = 28
 	height = 28
 
-	bin_img_path = "MNIST_images/image" + str(i) + ".bin"
-	
-	output_file = open(bin_img_path,"wb");
+	bin_img_path = "image_data/image" + str(i) + ".bin"
 
 	newFileByteArray = bytearray(test_x)
-	output_file.write(newFileByteArray)
+	
+	with open(bin_img_path,"wb") as output_file:
+		output_file.write(newFileByteArray)
 
-	jpg_img_path = "MNIST_images/input" + str(i) + ".jpg"
+	jpg_img_path = "image_data/image" + str(i) + ".jpg"
 
-	# im = Image.fromarray(test_x)
-	# im.save(jpg_img_path)
 	scipy.misc.imsave(jpg_img_path, test_x)
 
-	# fout = open(jpg_img_path, 'wb')
 
-	# pgmHeader = 'P5' + '\n' + str(width) + '  ' + str(height) + '  ' + str(255) + '\n'
-
-	# fout.write(pgmHeader)
-
-	# test_x.tofile(fout)
-	print(test_x)
-	# fout.close()
-	# print(test_x)
-	# im = Image.fromarray(test_x*255)
-	# if im.mode != 'RGB':
-	#	im = im.convert('RGB')
-	# filename = "MNIST_images/input" + str(i) + ".jpg"
-	# im.save(filename)
-
-# print(mnist.test.images[99].shape)
